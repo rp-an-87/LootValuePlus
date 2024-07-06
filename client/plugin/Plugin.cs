@@ -1,21 +1,21 @@
 ﻿using System.Reflection;
 using EFT;
-using Aki.Reflection.Patching;
+using SPT.Reflection.Patching;
 using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using Comfort.Common;
-using static LootValue.Globals;
+using static LootValuePlus.Globals;
 
-namespace LootValue
+namespace LootValuePlus
 {
 	[BepInPlugin(pluginGuid, pluginName, pluginVersion)]
 	public class LootValueMod : BaseUnityPlugin
 	{
 		// BepinEx
-		public const string pluginGuid = "IhanaMies.LootValue";
-		public const string pluginName = "LootValue";
-		public const string pluginVersion = "3.0.0";
+		public const string pluginGuid = "RPAN87.LootValuePlus";
+		public const string pluginName = "LootValuePlus";
+		public const string pluginVersion = "1.0.0";
 
 		private void Awake()
 		{

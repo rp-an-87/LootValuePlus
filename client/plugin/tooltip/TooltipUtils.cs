@@ -1,4 +1,4 @@
-namespace LootValue
+namespace LootValuePlus
 {
 
     internal static class TooltipUtils

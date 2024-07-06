@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using Aki.Reflection.Patching;
+using SPT.Reflection.Patching;
 using EFT.InventoryLogic;
 using EFT.UI;
-using static LootValue.TooltipUtils;
+using static LootValuePlus.TooltipUtils;
 
-namespace LootValue
+namespace LootValuePlus
 {
 
 	internal class TooltipController

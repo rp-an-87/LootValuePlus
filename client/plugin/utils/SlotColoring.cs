@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using static LootValue.Globals;
+using static LootValuePlus.Globals;
 
-namespace LootValue
+namespace LootValuePlus
 {
 	public struct LootValueConfigColor
 	{

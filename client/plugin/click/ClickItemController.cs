@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Aki.Reflection.Patching;
+using SPT.Reflection.Patching;
 using EFT.InventoryLogic;
 using EFT.UI.DragAndDrop;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace LootValue
+namespace LootValuePlus
 {
 
     internal class ClickItemController

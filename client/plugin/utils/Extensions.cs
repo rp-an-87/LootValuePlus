@@ -1,10 +1,10 @@
-﻿using Aki.Reflection.Utils;
+﻿using SPT.Reflection.Utils;
 using Comfort.Common;
 using EFT;
 using EFT.InventoryLogic;
 using System.Reflection;
 
-namespace LootValue
+namespace LootValuePlus
 {
 	internal static class NumberExtensions
 	{

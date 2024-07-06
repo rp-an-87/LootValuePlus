@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Aki.Reflection.Utils;
+using SPT.Reflection.Utils;
 using Comfort.Common;
 using EFT.InventoryLogic;
 using EFT.UI;
-using CurrencyUtil = GClass2517;
-using FleaRequirement = GClass1844;
+using CurrencyUtil = GClass2531;
+using FleaRequirement = GClass1859;
 
-namespace LootValue
+namespace LootValuePlus
 {
 
 	internal static class FleaUtils
@@ -335,7 +335,7 @@ namespace LootValue
 		{
 			TraderClass tc = Session.GetTrader(bestTraderOffer.TraderId);
 
-			GClass2047.Class1737 @class = new GClass2047.Class1737();
+			GClass2063.Class1765 @class = new GClass2063.Class1765();
 			@class.source = new TaskCompletionSource<bool>();
 
 			var itemRef = new EFT.Trading.TradingItemReference

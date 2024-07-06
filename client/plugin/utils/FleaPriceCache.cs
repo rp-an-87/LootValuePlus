@@ -1,10 +1,10 @@
-﻿using Aki.Common.Http;
+﻿using SPT.Common.Http;
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Aki.Reflection.Utils;
+using SPT.Reflection.Utils;
 
-namespace LootValue
+namespace LootValuePlus
 {
 	internal static class FleaPriceCache
 	{

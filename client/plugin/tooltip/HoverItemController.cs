@@ -1,11 +1,11 @@
 using System.Reflection;
-using Aki.Reflection.Patching;
+using SPT.Reflection.Patching;
 using EFT.InventoryLogic;
 using EFT.UI.DragAndDrop;
 using UnityEngine.EventSystems;
 
 
-namespace LootValue
+namespace LootValuePlus
 {
 
     internal class HoverItemController

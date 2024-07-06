@@ -3,7 +3,7 @@ using EFT.InventoryLogic;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace LootValue
+namespace LootValuePlus
 {
 
     internal class ItemUtils
