@@ -5,6 +5,7 @@ using SPT.Reflection.Patching;
 using EFT.InventoryLogic;
 using EFT.UI;
 using static LootValuePlus.TooltipUtils;
+using SPT.Reflection.Utils;
 
 namespace LootValuePlus
 {
@@ -13,6 +14,7 @@ namespace LootValuePlus
 	{
 
 		private static SimpleTooltip tooltip;
+		public static ISession Session => ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
 		public static void SetupTooltip(SimpleTooltip _tooltip, ref float delay)
 		{
@@ -31,7 +33,7 @@ namespace LootValuePlus
 		{
 
 			protected override MethodBase GetTargetMethod()
-			{
+			{	
 				return typeof(SimpleTooltip).GetMethods(BindingFlags.Instance | BindingFlags.Public).Where(x => x.Name == "Show").ToList()[0];
 			}
 
@@ -55,6 +57,8 @@ namespace LootValuePlus
 				bool shouldShowPricesTooltipwhileInRaid = LootValueMod.ShowFleaPricesInRaid.Value;
 				bool hideLowerPrice = LootValueMod.HideLowerPrice.Value;
 				bool hideLowerPriceInRaid = LootValueMod.HideLowerPriceInRaid.Value;
+				bool showFleaPriceBeforeAccess = LootValueMod.ShowFleaPriceBeforeAccess.Value;
+				bool hasFleaMarketAvailable = Session.RagFair.Available;
 
 				bool isInRaid = Globals.HasRaidStarted();
 
@@ -108,9 +112,20 @@ namespace LootValuePlus
 					fleaPricesForWeaponMods = FleaUtils.GetFleaValue(nonVitalMods);
                 }
 
-                // TODO (maybe): add an option to use a modifier key to show the rest while in raid
+				if(sellToFlea && !hasFleaMarketAvailable) {
+					sellToFlea = false;
+					sellToTrader = true;
+					isTraderPriceHigherThanFlea = true;
+					isFleaPriceHigherThanTrader = false;
+					canBeSoldToFlea = false;
+					AppendFullLineToTooltip(ref text, $"(Flea market is not available)", 11, "#AAAA33");
+				}
 
-                if (sellToFlea && TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item) && !isInRaid)
+				bool quickSellEnabled = LootValueMod.EnableQuickSell.Value;
+				bool quickSellUsesOneButton = LootValueMod.OneButtonQuickSell.Value;
+				bool showQuickSaleCommands = quickSellEnabled && !isInRaid;
+			
+                if (sellToFlea && TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item) && !isInRaid && quickSellUsesOneButton)
 				{
 					isTraderPriceHigherThanFlea = true;
 					isFleaPriceHigherThanTrader = false;
@@ -179,6 +194,10 @@ namespace LootValuePlus
 				{
 					showFleaPrice = false;
 				}
+				if(!hasFleaMarketAvailable && !showFleaPriceBeforeAccess) 
+				{
+					showFleaPrice = false;
+				}
 
 				// append flea price on the tooltip
 				if (showFleaPrice)
@@ -227,7 +246,7 @@ namespace LootValuePlus
 
 				}
 
-				if(fleaPricesForWeaponMods > 0) {
+				if(fleaPricesForWeaponMods > 0 && hasFleaMarketAvailable) {
 					AppendNewLineToTooltipText(ref text);
 					var color = SlotColoring.GetColorFromTotalValue(fleaPricesForWeaponMods);
 					StartSizeTag(ref text, 12);
@@ -270,9 +289,6 @@ namespace LootValuePlus
 				}
 
 
-				bool quickSellEnabled = LootValueMod.EnableQuickSell.Value;
-				bool quickSellUsesOneButton = LootValueMod.OneButtonQuickSell.Value;
-				bool showQuickSaleCommands = quickSellEnabled && !isInRaid;
 
 				if (showQuickSaleCommands)
 				{
@@ -312,7 +328,7 @@ namespace LootValuePlus
 
 						if (canBeSoldToFlea)
 						{
-							AppendTextToToolip(ref text, $"Sell to Flea with Alt+Shift+Right Click", "#888888");
+							AppendTextToToolip(ref text, $"List to Flea with Alt+Shift+Right Click", "#888888");
 							AddMultipleItemsSaleSection(ref text, item);
 						}
 					}
@@ -332,7 +348,7 @@ namespace LootValuePlus
 					if (amountOfItems > 1)
 					{
 						var totalPrice = FleaUtils.GetTotalPriceOfAllSimilarItemsWithinSameContainer(item);
-						AppendFullLineToTooltip(ref text, $"(Will sell {amountOfItems} similar items for ₽ {totalPrice.FormatNumber()})", 10, "#555555");
+						AppendFullLineToTooltip(ref text, $"(Will list {amountOfItems} similar items in flea for ₽ {totalPrice.FormatNumber()})", 10, "#555555");
 					}
 
 				}
