@@ -6,12 +6,15 @@ using EFT.InventoryLogic;
 using EFT.UI.DragAndDrop;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using SPT.Reflection.Utils;
 
 namespace LootValuePlus
 {
 
     internal class ClickItemController
     {
+
+        public static ISession Session => ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
         internal class ItemViewOnClickPatch : ModulePatch
         {
@@ -31,6 +34,11 @@ namespace LootValuePlus
                 }
 
                 Item item = __instance.Item;
+
+                if(item == null) 
+                {
+                    return true;
+                }
 
                 if (!ItemUtils.IsItemInPlayerInventory(item))
                 {
@@ -64,6 +72,12 @@ namespace LootValuePlus
 
                                     int priceOnFlea = FleaUtils.GetFleaMarketUnitPriceWithModifiers(item) * item.StackObjectsCount;
                                     if (TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item))
+                                    {
+                                        priceOnFlea = 0;
+                                    }
+
+                                    bool hasFleaMarketAvailable = Session.RagFair.Available;
+                                    if (!hasFleaMarketAvailable)
                                     {
                                         priceOnFlea = 0;
                                     }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using SPT.Reflection.Utils;
+using System.Threading.Tasks;
 
 namespace LootValuePlus
 {
@@ -11,7 +12,7 @@ namespace LootValuePlus
 		static Dictionary<string, CachePrice> cache = new Dictionary<string, CachePrice>();
 		public static ISession Session => ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
-		public static int? FetchPrice(string templateId)
+		public static async Task<int?> FetchPrice(string templateId)
 		{
 			bool fleaAvailable = Session.RagFair.Available || LootValueMod.ShowFleaPriceBeforeAccess.Value;
 
@@ -22,22 +23,22 @@ namespace LootValuePlus
 			{
 				double secondsSinceLastUpdate = (DateTime.Now - cache[templateId].lastUpdate).TotalSeconds;
 				if (secondsSinceLastUpdate > 300)
-					return QueryAndTryUpsertPrice(templateId, true);
+					return await QueryAndTryUpsertPrice(templateId, true);
 				else
 					return cache[templateId].price;
 			}
 			else
-				return QueryAndTryUpsertPrice(templateId, false);
+				return await QueryAndTryUpsertPrice(templateId, false);
 		}
 
-		private static string QueryPrice(string templateId)
+		private static async Task<string> QueryPrice(string templateId)
 		{
-			return RequestHandler.PostJson("/LootValue/GetItemLowestFleaPrice", JsonConvert.SerializeObject(new FleaPriceRequest(templateId)));
+			return await CustomRequestHandler.PostJsonAsync("/LootValue/GetItemLowestFleaPrice", JsonConvert.SerializeObject(new FleaPriceRequest(templateId)));
 		}
 
-		private static int? QueryAndTryUpsertPrice(string templateId, bool update)
+		private static async Task<int?> QueryAndTryUpsertPrice(string templateId, bool update)
 		{
-			string response = QueryPrice(templateId);
+			string response = await QueryPrice(templateId);
 			bool hasPlayerFleaPrice = !(string.IsNullOrEmpty(response) || response == "null");
 
 			int price;

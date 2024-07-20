@@ -37,7 +37,7 @@ namespace LootValuePlus
 				return 0;
 			}
 
-			var price = FleaPriceCache.FetchPrice(item.TemplateId);
+			var price = Task.Run(() => FleaPriceCache.FetchPrice(item.TemplateId)).Result;
 
 			if (!price.HasValue)
 			{
@@ -227,11 +227,11 @@ namespace LootValuePlus
 		{
 			var offerRequeriment = new FleaRequirement()
 			{
-				count = price - 1, //undercut by 1 ruble
+				count = price, //undercut by 1 ruble
 				_tpl = "5449016a4bdc2d6f028b456f" //id of ruble
 			};
 
-			FleaRequirement[] offer = new FleaRequirement[1] { offerRequeriment };
+			FleaRequirement[] offer = [offerRequeriment];
 			Session.RagFair.AddOffer(false, itemIds, offer, null);
 		}
 
