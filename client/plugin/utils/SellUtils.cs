@@ -228,11 +228,12 @@ namespace LootValuePlus
 			var offerRequeriment = new FleaRequirement()
 			{
 				count = price, //undercut by 1 ruble
-				_tpl = "5449016a4bdc2d6f028b456f" //id of ruble
+				_tpl = "5449016a4bdc2d6f028b456f", //id of ruble
+				onlyFunctional = true
 			};
 
-			FleaRequirement[] offer = [offerRequeriment];
-			Session.RagFair.AddOffer(false, itemIds, offer, null);
+			Globals.logger.LogInfo($"Invoking Session.RagFair.AddOffer(false, '{itemIds.EnumerableToString(", ")}', ({offerRequeriment.ToPrettyJson()}), null)");
+			Session.RagFair.AddOffer(false, itemIds, [offerRequeriment], null);
 		}
 
 
