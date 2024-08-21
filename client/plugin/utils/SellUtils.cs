@@ -25,8 +25,17 @@ namespace LootValuePlus
 
 		public static int GetFleaValue(IEnumerable<Item> items)
 		{
+			var soldableItems = items.Where(item => item.Template.CanSellOnRagfair);
+			var templateIds = soldableItems.Select(item => item.TemplateId);
 
-			return items.Select(item => GetFleaValue(item)).Sum();
+			var price = Task.Run(() => FleaPriceCache.FetchPrice(templateIds)).Result;
+			
+			if (!price.HasValue)
+			{
+				return 0;
+			}
+
+			return price.Value;
 		}
 
 		public static int GetFleaValue(Item item)
@@ -372,11 +381,6 @@ namespace LootValuePlus
 		}
 	}
 
-	public class FleaPriceRequest
-	{
-		public string templateId;
-		public FleaPriceRequest(string templateId) => this.templateId = templateId;
-	}
 
 	internal class DurabilityOrProfitConditionFlags
 	{
