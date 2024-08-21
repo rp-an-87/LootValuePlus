@@ -6,6 +6,7 @@ using EFT.InventoryLogic;
 using EFT.UI;
 using static LootValuePlus.TooltipUtils;
 using SPT.Reflection.Utils;
+using EFT.UI.Screens;
 
 namespace LootValuePlus
 {
@@ -14,6 +15,7 @@ namespace LootValuePlus
 	{
 
 		private static SimpleTooltip tooltip;
+		private static bool IsInScreenThatShouldNotShowPrices = false;
 		public static ISession Session => ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
 		public static void SetupTooltip(SimpleTooltip _tooltip, ref float delay)
@@ -33,8 +35,11 @@ namespace LootValuePlus
 		{
 
 			protected override MethodBase GetTargetMethod()
-			{	
-				return typeof(SimpleTooltip).GetMethods(BindingFlags.Instance | BindingFlags.Public).Where(x => x.Name == "Show").ToList()[0];
+			{
+				return typeof(SimpleTooltip)
+					.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+					.Where(x => x.Name == "Show")
+					.ToList()[0];
 			}
 
 			[PatchPrefix]
@@ -66,7 +71,7 @@ namespace LootValuePlus
 				{
 					return;
 				}
-				if (ItemUtils.ItemBelongsToTraderOrFleaMarketOrMail(item))
+				if (ItemUtils.ItemBelongsToTraderOrFleaMarketOrMail(item) || IsInScreenThatShouldNotShowPrices)
 				{
 					return;
 				}
@@ -106,13 +111,17 @@ namespace LootValuePlus
 
 				var fleaPricesForWeaponMods = 0;
 				var shouldShowNonVitalModsPartsOfItem = LootValueMod.ShowNonVitalWeaponPartsFleaPrice.Value;
-				if(shouldShowNonVitalModsPartsOfItem && ItemUtils.IsItemWeapon(item)) {
+				if (shouldShowNonVitalModsPartsOfItem && ItemUtils.IsItemWeapon(item))
+				{
 
 					var nonVitalMods = ItemUtils.GetWeaponNonVitalMods(item);
 					fleaPricesForWeaponMods = FleaUtils.GetFleaValue(nonVitalMods);
-                }
+				}
 
-				if(sellToFlea && !hasFleaMarketAvailable) {
+				// TODO: add another thing that fetches price of all items within item if pressing a modifier, which should not apply to weapons
+
+				if (sellToFlea && !hasFleaMarketAvailable)
+				{
 					sellToFlea = false;
 					sellToTrader = true;
 					isTraderPriceHigherThanFlea = true;
@@ -124,8 +133,8 @@ namespace LootValuePlus
 				bool quickSellEnabled = LootValueMod.EnableQuickSell.Value;
 				bool quickSellUsesOneButton = LootValueMod.OneButtonQuickSell.Value;
 				bool showQuickSaleCommands = quickSellEnabled && !isInRaid;
-			
-                if (sellToFlea && TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item) && !isInRaid && quickSellUsesOneButton)
+
+				if (sellToFlea && TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item) && !isInRaid && quickSellUsesOneButton)
 				{
 					isTraderPriceHigherThanFlea = true;
 					isFleaPriceHigherThanTrader = false;
@@ -194,7 +203,7 @@ namespace LootValuePlus
 				{
 					showFleaPrice = false;
 				}
-				if(!hasFleaMarketAvailable && !showFleaPriceBeforeAccess) 
+				if (!hasFleaMarketAvailable && !showFleaPriceBeforeAccess)
 				{
 					showFleaPrice = false;
 				}
@@ -246,7 +255,8 @@ namespace LootValuePlus
 
 				}
 
-				if(fleaPricesForWeaponMods > 0 && hasFleaMarketAvailable) {
+				if (fleaPricesForWeaponMods > 0 && hasFleaMarketAvailable)
+				{
 					AppendNewLineToTooltipText(ref text);
 					var color = SlotColoring.GetColorFromTotalValue(fleaPricesForWeaponMods);
 					StartSizeTag(ref text, 12);
@@ -254,6 +264,8 @@ namespace LootValuePlus
 					AppendTextToToolip(ref text, $"in parts (flea)", "#555555");
 					EndSizeTag(ref text);
 				}
+
+				// TODO: add a (configurable) HOLD key modifier to show ALL parts of weapon, not just the non vital mods
 
 				if (!isInRaid)
 				{
@@ -374,8 +386,37 @@ namespace LootValuePlus
 
 		}
 
+		internal class ScreenTypePatch : ModulePatch
+		{
 
+			protected override MethodBase GetTargetMethod()
+			{
+				return typeof(MenuTaskBar)
+						.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+						.Where(x => x.Name == "OnScreenChanged")
+						.ToList()[0];
+			}
+
+			[PatchPrefix]
+			static void Prefix(EEftScreenType eftScreenType)
+			{
+				if (eftScreenType == EEftScreenType.EditBuild
+					|| eftScreenType == EEftScreenType.WeaponModding
+					|| eftScreenType == EEftScreenType.HealthTreatment)
+				{
+					IsInScreenThatShouldNotShowPrices = true;
+					return;
+				}
+				else
+				{
+					IsInScreenThatShouldNotShowPrices = false;
+					return;
+				}
+			}
+		}
 
 	}
+
+
 
 }

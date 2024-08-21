@@ -30,6 +30,8 @@ namespace LootValuePlus
 			new HoverItemController.GridItemOnPointerEnterPatch().Enable();
 			new HoverItemController.GridItemOnPointerExitPatch().Enable();
 			new ClickItemController.ItemViewOnClickPatch().Enable();
+			new TooltipController.ScreenTypePatch().Enable();
+			
 			
 			SlotColoring.UseDefaultColors();
 		}
