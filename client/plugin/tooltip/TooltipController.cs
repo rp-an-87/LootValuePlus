@@ -15,7 +15,7 @@ namespace LootValuePlus
 	{
 
 		private static SimpleTooltip tooltip;
-		private static bool IsInScreenThatShouldNotShowPrices = false;
+
 		public static ISession Session => ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
 		public static void SetupTooltip(SimpleTooltip _tooltip, ref float delay)
@@ -59,6 +59,7 @@ namespace LootValuePlus
 					return;
 				}
 
+				bool canQuickSellOnCurrentScreen = ScreenChangeController.CanQuickSellOnCurrentScreen();
 				bool shouldShowPricesTooltipwhileInRaid = LootValueMod.ShowFleaPricesInRaid.Value;
 				bool hideLowerPrice = LootValueMod.HideLowerPrice.Value;
 				bool hideLowerPriceInRaid = LootValueMod.HideLowerPriceInRaid.Value;
@@ -71,7 +72,9 @@ namespace LootValuePlus
 				{
 					return;
 				}
-				if (ItemUtils.ItemBelongsToTraderOrFleaMarketOrMail(item) || IsInScreenThatShouldNotShowPrices)
+
+				var shouldShowItemPriceTooltipBasedOnCurrentScreen = ScreenChangeController.CanShowItemPriceTooltipsOnCurrentScreen();
+				if (ItemUtils.ItemBelongsToTraderOrFleaMarketOrMail(item) || !shouldShowItemPriceTooltipBasedOnCurrentScreen)
 				{
 					return;
 				}
@@ -133,8 +136,13 @@ namespace LootValuePlus
 				bool quickSellEnabled = LootValueMod.EnableQuickSell.Value;
 				bool quickSellUsesOneButton = LootValueMod.OneButtonQuickSell.Value;
 				bool showQuickSaleCommands = quickSellEnabled && !isInRaid;
+				bool shouldSellToTraderDueToPriceOrCondition = TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item);
 
-				if (sellToFlea && TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item) && !isInRaid && quickSellUsesOneButton)
+				if (sellToFlea
+						&& shouldSellToTraderDueToPriceOrCondition
+						&& !isInRaid 
+						&& quickSellUsesOneButton 
+						&& canQuickSellOnCurrentScreen)
 				{
 					isTraderPriceHigherThanFlea = true;
 					isFleaPriceHigherThanTrader = false;
@@ -300,9 +308,7 @@ namespace LootValuePlus
 
 				}
 
-
-
-				if (showQuickSaleCommands)
+				if (showQuickSaleCommands && canQuickSellOnCurrentScreen)
 				{
 					if (quickSellUsesOneButton)
 					{
@@ -384,35 +390,6 @@ namespace LootValuePlus
 				return "due to no reason :)";
 			}
 
-		}
-
-		internal class ScreenTypePatch : ModulePatch
-		{
-
-			protected override MethodBase GetTargetMethod()
-			{
-				return typeof(MenuTaskBar)
-						.GetMethods(BindingFlags.Instance | BindingFlags.Public)
-						.Where(x => x.Name == "OnScreenChanged")
-						.ToList()[0];
-			}
-
-			[PatchPrefix]
-			static void Prefix(EEftScreenType eftScreenType)
-			{
-				if (eftScreenType == EEftScreenType.EditBuild
-					|| eftScreenType == EEftScreenType.WeaponModding
-					|| eftScreenType == EEftScreenType.HealthTreatment)
-				{
-					IsInScreenThatShouldNotShowPrices = true;
-					return;
-				}
-				else
-				{
-					IsInScreenThatShouldNotShowPrices = false;
-					return;
-				}
-			}
 		}
 
 	}

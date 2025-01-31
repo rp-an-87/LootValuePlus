@@ -35,12 +35,17 @@ namespace LootValuePlus
 
                 Item item = __instance.Item;
 
-                if(item == null) 
+                if (item == null)
                 {
                     return true;
                 }
 
                 if (!ItemUtils.IsItemInPlayerInventory(item))
+                {
+                    return true;
+                }
+
+                if (!ScreenChangeController.CanQuickSellOnCurrentScreen())
                 {
                     return true;
                 }
