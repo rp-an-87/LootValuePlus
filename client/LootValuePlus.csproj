@@ -117,6 +117,7 @@
     <PostBuildEvent>
       copy "$(TargetPath)" "$(ProjectDir)\..\..\..\BepInEx\plugins\$(AssemblyName)\$(TargetFileName)"
       copy "$(ProjectDir)\..\server\LootValuePlus\src\mod.ts" "$(ProjectDir)\..\..\..\user\mods\LootValuePlus\src\mod.ts"
+      copy "$(ProjectDir)\..\server\LootValuePlus\config\config.json" "$(ProjectDir)\..\..\..\user\mods\LootValuePlus\config\config.json"
       copy "$(ProjectDir)\..\server\LootValuePlus\package.json" "$(ProjectDir)\..\..\..\user\mods\LootValuePlus\package.json"
       echo "$(TargetPath)"
     </PostBuildEvent>
