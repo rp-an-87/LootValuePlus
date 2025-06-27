@@ -7,8 +7,9 @@ using SPT.Reflection.Utils;
 using Comfort.Common;
 using EFT.InventoryLogic;
 using EFT.UI;
-using CurrencyUtil = GClass2531;
-using FleaRequirement = GClass1859;
+// fix VVVVVVV
+using CurrencyUtil = GClass2934;
+using FleaRequirement = GClass2102;
 
 namespace LootValuePlus
 {
@@ -26,7 +27,7 @@ namespace LootValuePlus
 		public static int GetFleaValue(IEnumerable<Item> items)
 		{
 			var soldableItems = items.Where(item => item.Template.CanSellOnRagfair);
-			var templateIds = soldableItems.Select(item => item.TemplateId);
+			var templateIds = soldableItems.Select(item => item.TemplateId.ToString());
 
 			var price = Task.Run(() => FleaPriceCache.FetchPrice(templateIds)).Result;
 			
@@ -82,8 +83,10 @@ namespace LootValuePlus
 
 		public static int GetTotalPriceOfAllSimilarItemsWithinSameContainer(Item item)
 		{
+			var includePinned = LootValueMod.AllowQuickSellPinned.Value;
+			var includeLocked = LootValueMod.AllowQuickSellLocked.Value;
 			var unitPrice = GetFleaMarketUnitPriceWithModifiers(item);
-			var items = ItemUtils.GetItemsSimilarToItemWithinSameContainer(item);
+			var items = ItemUtils.GetItemsSimilarToItemWithinSameContainer(item, includePinned, includeLocked);
 			return items.Select(i => unitPrice * i.StackObjectsCount).Sum();
 		}
 
@@ -92,7 +95,9 @@ namespace LootValuePlus
 			var unitPrice = GetFleaMarketUnitPriceWithModifiers(item);
 			if (considerMultipleItems)
 			{
-				var items = ItemUtils.GetItemsSimilarToItemWithinSameContainer(item);
+				var includePinned = LootValueMod.AllowQuickSellPinned.Value;
+				var includeLocked = LootValueMod.AllowQuickSellLocked.Value;
+				var items = ItemUtils.GetItemsSimilarToItemWithinSameContainer(item, includePinned, includeLocked);
 				var price = items.Select(i => unitPrice * i.StackObjectsCount).Sum();
 				return price < priceThreshold;
 			}
@@ -168,6 +173,24 @@ namespace LootValuePlus
 				return false;
 			}
 
+			var canSellPinnedItems = LootValueMod.AllowQuickSellPinned.Value;
+			var canSellLockedItems = LootValueMod.AllowQuickSellLocked.Value;
+
+			if (item.PinLockState == EItemPinLockState.Pinned && !canSellPinnedItems)
+			{
+				if (displayWarning)
+					NotificationManagerClass.DisplayWarningNotification("Quicksell: Item is pinned.");
+
+				return false;
+			}
+			
+			if ( item.PinLockState == EItemPinLockState.Locked && !canSellLockedItems)
+			{
+				if (displayWarning)
+					NotificationManagerClass.DisplayWarningNotification("Quicksell: Item is locked.");
+
+				return false;
+			}
 
 			return true;
 		}
@@ -202,7 +225,9 @@ namespace LootValuePlus
 				return;
 			}
 
-			var similarBundledItems = ItemUtils.GetItemsSimilarToItemWithinSameContainer(item);
+			var includePinned = LootValueMod.AllowQuickSellPinned.Value;
+			var includeLocked = LootValueMod.AllowQuickSellLocked.Value;
+			var similarBundledItems = ItemUtils.GetItemsSimilarToItemWithinSameContainer(item, includePinned, includeLocked);
 			SellToFlea(item, similarBundledItems);
 		}
 
@@ -269,15 +294,11 @@ namespace LootValuePlus
 				return null;
 			}
 
-			// this seems to work to Everything but armored rigs
-			// If the item is not empty, it will not properly calculate the offer
-			// For some reason it works for armors, weapons, helmets, but not for armored rigs
-			var clone = item.CloneVisibleItem();
-			clone.UnlimitedCount = false;
-
+			var clone = ItemUtils.CloneItemSafely(item);
+			
 			var bestOffer =
 				Session.Traders
-					.Where(trader => trader.Info.Available && !trader.Info.Disabled && trader.Info.Unlocked)
+					.Where(trader => trader.Info.Available && !trader.Info.Disabled && trader.Info.Unlocked && !trader.Settings.AvailableInRaid)
 					.Select(trader => GetTraderOffer(clone, trader))
 					.Where(offer => offer != null)
 					.OrderByDescending(offer => offer.Price)
@@ -297,14 +318,14 @@ namespace LootValuePlus
 
 			// TODO: try to see if we can convert non rubles to rubles
 
-			return new TraderOffer(
+			return result.HasValue ? new TraderOffer(
 				trader.Id,
 				trader.LocalizedName,
 				result.Value.Amount,
-				CurrencyUtil.GetCurrencyCharById(result.Value.CurrencyId),
-				trader.GetSupplyData().CurrencyCourses[result.Value.CurrencyId],
+				CurrencyUtil.GetCurrencyCharById(result.Value.CurrencyId.Value),
+				trader.GetSupplyData().CurrencyCourses[result.Value.CurrencyId.Value],
 				item.StackObjectsCount
-			);
+			) : null;
 		}
 
 		public static bool ShouldSellToTraderDueToPriceOrCondition(Item item)
@@ -344,7 +365,7 @@ namespace LootValuePlus
 		{
 			TraderClass tc = Session.GetTrader(bestTraderOffer.TraderId);
 
-			GClass2063.Class1765 @class = new GClass2063.Class1765();
+			GClass2332.Class1936 @class = new GClass2332.Class1936();
 			@class.source = new TaskCompletionSource<bool>();
 
 			var itemRef = new EFT.Trading.TradingItemReference
