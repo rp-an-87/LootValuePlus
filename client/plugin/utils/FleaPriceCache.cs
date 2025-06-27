@@ -11,13 +11,13 @@ namespace LootValuePlus
 {
 	internal static class FleaPriceCache
 	{
-		static Dictionary<string, CachePrice> cache = new Dictionary<string, CachePrice>();
+		public static Dictionary<string, CachePrice> cache = new Dictionary<string, CachePrice>();
 		public static ISession Session => ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
 		public static async Task<int?> FetchPrice(string templateId)
 		{
 			bool fleaAvailable = Session.RagFair.Available || LootValueMod.ShowFleaPriceBeforeAccess.Value;
-			if (!fleaAvailable) 
+			if (!fleaAvailable)
 			{
 				return null;
 			}
@@ -25,7 +25,8 @@ namespace LootValuePlus
 			if (cache.ContainsKey(templateId))
 			{
 				var cachedPrice = cache[templateId];
-				if(cachedPrice.ShouldUpdate()) {
+				if (cachedPrice.ShouldUpdate())
+				{
 					var price = await QueryTemplateIdSellingPrice(templateId);
 					cachedPrice.Update(price);
 				}
@@ -65,12 +66,15 @@ namespace LootValuePlus
 
 			// fetch all ids & update cache
 			var prices = await QueryTemplateIdSellingPrice(templateIdsToFetch);
-			prices.ExecuteForEach(price => 
+			prices.ExecuteForEach(price =>
 			{
 				var templateId = price.templateId;
-				if (cache.ContainsKey(templateId))  {
+				if (cache.ContainsKey(templateId))
+				{
 					cache[templateId].Update(price.price);
-				} else {
+				}
+				else
+				{
 					cache[templateId] = new CachePrice(price.price);
 				}
 			});
@@ -78,31 +82,30 @@ namespace LootValuePlus
 			return templateIds.Select(id => cache[id].price).Sum();
 		}
 
-		private static async Task<int> QueryTemplateIdSellingPrice(string templateId) 
+		private static async Task<int> QueryTemplateIdSellingPrice(string templateId)
 		{
 			string response = await QueryPrice(templateId);
-			bool hasPlayerFleaPrice = !(string.IsNullOrEmpty(response) || response == "null");
-
-			int price;
-			if (hasPlayerFleaPrice)
+			if (string.IsNullOrEmpty(response) || response == "null")
 			{
-				price = int.Parse(response);
-			}
-			else
-			{
-				price = 0;
+				return 0;
 			}
 
-			return price;
+			return int.Parse(response);
 		}
 
-		private static async Task<IEnumerable<FleaPrice>> QueryTemplateIdSellingPrice(IEnumerable<string> templateIds) 
+		private static async Task<IEnumerable<FleaPrice>> QueryTemplateIdSellingPrice(IEnumerable<string> templateIds)
 		{
-			if(templateIds.IsNullOrEmpty()) {
+			if (templateIds.IsNullOrEmpty())
+			{
 				return [];
 			}
 
 			string response = await QueryPrice(templateIds);
+			if (string.IsNullOrEmpty(response) || response == "null")
+			{
+				return templateIds.Select(templateId => new FleaPrice() { templateId = templateId, price = 0 });
+			}
+
 			// Globals.logger.LogInfo($"RESPONSE: {response}");
 			return JsonConvert.DeserializeObject<FleaPricesResponse>(response).prices;
 		}
@@ -133,13 +136,13 @@ namespace LootValuePlus
 
 	public class FleaPrice
 	{
-		public string templateId {get; set;}
-		public int price {get; set;}
+		public string templateId { get; set; }
+		public int price { get; set; }
 	}
 
 	public class FleaPricesResponse
 	{
-		public Collection<FleaPrice> prices {get; set;}
+		public Collection<FleaPrice> prices { get; set; }
 	}
 
 	internal class CachePrice
@@ -159,9 +162,9 @@ namespace LootValuePlus
 			lastUpdate = DateTime.Now;
 		}
 
-		public bool ShouldUpdate() 
+		public bool ShouldUpdate()
 		{
-			return (DateTime.Now - lastUpdate).TotalSeconds >= 300;
+			return (DateTime.Now - lastUpdate).TotalSeconds >= 600;
 		}
 	}
 }
