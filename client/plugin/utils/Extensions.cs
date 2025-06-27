@@ -28,7 +28,7 @@ namespace LootValuePlus
 		private static ISession Session => ClientAppUtils.GetMainApp().GetClientBackEndSession();
 
 		private static readonly FieldInfo SupplyDataField =
-			typeof(TraderClass).GetField("supplyData_0", BindingFlags.NonPublic | BindingFlags.Instance);
+			typeof(TraderClass).GetField("supplyData_0", BindingFlags.Public | BindingFlags.Instance);
 
 		public static SupplyData GetSupplyData(this TraderClass trader) =>
 			SupplyDataField.GetValue(trader) as SupplyData;
