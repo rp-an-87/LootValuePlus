@@ -2,11 +2,13 @@ using System.Linq;
 using EFT.InventoryLogic;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using EFT.Visual;
+using HarmonyLib;
 
 namespace LootValuePlus
 {
 
-    internal class ItemUtils
+	internal class ItemUtils
 	{
 
 		public static float GetResourcePercentageOfItem(Item item)
@@ -94,13 +96,13 @@ namespace LootValuePlus
 			{
 				return new Collection<Item>();
 			}
-			
+
 			var mods = weapon.Mods;
 			var vitalItems = weapon.VitalParts
 									.Select(slot => slot.ContainedItem) // get all vital items from their respective slot
 									.Where(contained => contained != null); // only keep those not null
-			
-			var nonVitalMods = mods.Where(mod => !vitalItems.Contains(mod) );
+
+			var nonVitalMods = mods.Where(mod => !vitalItems.Contains(mod));
 			return nonVitalMods;
 		}
 
@@ -110,8 +112,27 @@ namespace LootValuePlus
 			{
 				return true;
 			}
-			
+
 			return false;
+		}
+
+		public static bool IsItemArmoredRig(Item item)
+		{
+			if (item is VestItemClass)
+			{
+				return true;
+			}
+			return false;
+		}
+
+		// this seems to work to Everything but armored rigs
+		// If the item is not empty, it will not properly calculate the offer
+		// For some reason it works for armors, weapons, helmets, but not for armored rigs
+		public static Item CloneItemSafely(Item item)
+		{
+			var clone = item.CloneVisibleItem();
+			clone.UnlimitedCount = false;
+			return clone;
 		}
 
 
@@ -163,34 +184,39 @@ namespace LootValuePlus
 		/**
 		* Includes original item!
 		*/
-		public static IEnumerable<Item> GetItemsSimilarToItemWithinSameContainer(Item item)
+		public static IEnumerable<Item> GetItemsSimilarToItemWithinSameContainer(Item item, bool includePinnedItems = true, bool includeLockedItems = true)
 		{
 
-			if (item == null)
+			if (item?.Parent?.Container == null)
 			{
-				return Enumerable.Empty<Item>();
+				return [];
 			}
 
-			if (item.Parent == null)
-			{
-				return Enumerable.Empty<Item>();
-			}
+			var itemsOfParent = item.Parent.Container.Items ?? [];
 
-			if (item.Parent.Container == null)
-			{
-				return Enumerable.Empty<Item>();
-			}
+			return itemsOfParent
+				.Where(o => item.Compare(o)) // select all same items
+				.Where(o => o.MarkedAsSpawnedInSession == item.MarkedAsSpawnedInSession) // all must have same FiR status
+				.Where(o => includePinnedItems || !IsItemPinned(o)) // if not including pinned items, we keep non pinned items
+				.Where(o => includeLockedItems || !IsItemLocked(o)); // if not including locked items, we keep non locked items
+		}
 
-			var itemsOfParent = item.Parent.Container.Items;
-			return itemsOfParent.Where(o => item.Compare(o) && o.MarkedAsSpawnedInSession == item.MarkedAsSpawnedInSession);
+		public static bool IsItemLocked(Item item)
+		{
+			return item.PinLockState == EItemPinLockState.Locked;
+		}
+
+		public static bool IsItemPinned(Item item)
+		{
+			return item.PinLockState == EItemPinLockState.Pinned;
 		}
 
 		/**
 		* Includes original item!
 		*/
-		public static int CountItemsSimilarToItemWithinSameContainer(Item item)
+		public static int CountItemsSimilarToItemWithinSameContainer(Item item, bool includePinned = true, bool includeLocked = true)
 		{
-			return GetItemsSimilarToItemWithinSameContainer(item).Count();
+			return GetItemsSimilarToItemWithinSameContainer(item, includePinned, includeLocked).Count();
 		}
 
 	}

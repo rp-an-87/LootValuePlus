@@ -7,6 +7,7 @@ using EFT.UI;
 using static LootValuePlus.TooltipUtils;
 using SPT.Reflection.Utils;
 using EFT.UI.Screens;
+using UnityEngine;
 
 namespace LootValuePlus
 {
@@ -43,7 +44,7 @@ namespace LootValuePlus
 			}
 
 			[PatchPrefix]
-			private static void Prefix(ref string text, ref float delay, SimpleTooltip __instance)
+			private static void Prefix(ref string text, ref Vector2? offset, ref float delay, SimpleTooltip __instance)
 			{
 				SetupTooltip(__instance, ref delay);
 
@@ -133,15 +134,15 @@ namespace LootValuePlus
 					AppendFullLineToTooltip(ref text, $"(Flea market is not available)", 11, "#AAAA33");
 				}
 
-				bool quickSellEnabled = LootValueMod.EnableQuickSell.Value;
-				bool quickSellUsesOneButton = LootValueMod.OneButtonQuickSell.Value;
-				bool showQuickSaleCommands = quickSellEnabled && !isInRaid;
-				bool shouldSellToTraderDueToPriceOrCondition = TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item);
+				var quickSellEnabled = LootValueMod.EnableQuickSell.Value;
+				var quickSellUsesOneButton = LootValueMod.OneButtonQuickSell.Value;
+				var showQuickSaleCommands = quickSellEnabled && !isInRaid;
+				var shouldSellToTraderDueToPriceOrCondition = TraderUtils.ShouldSellToTraderDueToPriceOrCondition(item);
 
 				if (sellToFlea
 						&& shouldSellToTraderDueToPriceOrCondition
-						&& !isInRaid 
-						&& quickSellUsesOneButton 
+						&& !isInRaid
+						&& quickSellUsesOneButton
 						&& canQuickSellOnCurrentScreen)
 				{
 					isTraderPriceHigherThanFlea = true;
@@ -261,6 +262,21 @@ namespace LootValuePlus
 
 					}
 
+					var canSellPinnedItems = LootValueMod.AllowQuickSellPinned.Value;
+					var canSellLockedItems = LootValueMod.AllowQuickSellLocked.Value;
+
+					if (item.PinLockState == EItemPinLockState.Pinned && !canSellPinnedItems)
+					{
+						AppendFullLineToTooltip(ref text, "(Item is pinned)", 11, "#AA3333");
+						canBeSoldToFlea = false;
+					}
+					
+					if ( item.PinLockState == EItemPinLockState.Locked && !canSellLockedItems)
+					{
+						AppendFullLineToTooltip(ref text, "(Item is locked)", 11, "#AA3333");
+						canBeSoldToFlea = false;
+					}
+
 				}
 
 				if (fleaPricesForWeaponMods > 0 && hasFleaMarketAvailable)
@@ -292,12 +308,19 @@ namespace LootValuePlus
 				}
 
 				var shouldShowPricePerSlotAndPerKgInRaid = LootValueMod.ShowPricePerKgAndPerSlotInRaid.Value;
-				if (isInRaid && shouldShowPricePerSlotAndPerKgInRaid)
-				{
+				var shouldShowPricePerSlotAndPerKgOutRaid = LootValueMod.ShowPricePerKgAndPerSlotOutOfRaid.Value;
+				var shouldShowPricePerKgWeight = (isInRaid && shouldShowPricePerSlotAndPerKgInRaid) || (!isInRaid && shouldShowPricePerSlotAndPerKgOutRaid);
 
+				if (shouldShowPricePerKgWeight)
+				{
 					var pricePerSlot = sellToTrader ? pricePerSlotTrader : pricePerSlotFlea;
 					var unitPrice = sellToTrader ? (finalTraderPrice / stackAmount) : FleaUtils.GetFleaMarketUnitPriceWithModifiers(item);
-					var pricePerWeight = (int)(unitPrice / item.GetSingleItemTotalWeight());
+					var pricePerWeight = (int)(unitPrice / item.TotalWeight);
+
+					if (item.TotalWeight.ApproxEquals(0.0f))
+					{
+						pricePerWeight = 0;
+					}
 
 					AppendSeparator(ref text);
 					StartSizeTag(ref text, 11);
@@ -305,7 +328,6 @@ namespace LootValuePlus
 					AppendNewLineToTooltipText(ref text);
 					AppendTextToToolip(ref text, $"₽ / SLOT\t{pricePerSlot.FormatNumber()}", "#555555");
 					EndSizeTag(ref text);
-
 				}
 
 				if (showQuickSaleCommands && canQuickSellOnCurrentScreen)
@@ -362,7 +384,9 @@ namespace LootValuePlus
 				if (canSellSimilarItems)
 				{
 					// append only if more than 1 item will be sold due to the flea market action
-					var amountOfItems = ItemUtils.CountItemsSimilarToItemWithinSameContainer(item);
+					var includePinned = LootValueMod.AllowQuickSellPinned.Value;
+					var includeLocked = LootValueMod.AllowQuickSellLocked.Value;
+					var amountOfItems = ItemUtils.CountItemsSimilarToItemWithinSameContainer(item, includePinned, includeLocked);
 					if (amountOfItems > 1)
 					{
 						var totalPrice = FleaUtils.GetTotalPriceOfAllSimilarItemsWithinSameContainer(item);
