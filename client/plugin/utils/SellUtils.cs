@@ -30,7 +30,7 @@ namespace LootValuePlus
 			var templateIds = soldableItems.Select(item => item.TemplateId.ToString());
 
 			var price = Task.Run(() => FleaPriceCache.FetchPrice(templateIds)).Result;
-			
+
 			if (!price.HasValue)
 			{
 				return 0;
@@ -54,7 +54,7 @@ namespace LootValuePlus
 				return 0;
 			}
 
-			return (int) price.Value;
+			return (int)price.Value;
 		}
 
 		public static int GetFleaMarketUnitPrice(Item item)
@@ -183,8 +183,8 @@ namespace LootValuePlus
 
 				return false;
 			}
-			
-			if ( item.PinLockState == EItemPinLockState.Locked && !canSellLockedItems)
+
+			if (item.PinLockState == EItemPinLockState.Locked && !canSellLockedItems)
 			{
 				if (displayWarning)
 					NotificationManagerClass.DisplayWarningNotification("Quicksell: Item is locked.");
@@ -295,7 +295,7 @@ namespace LootValuePlus
 			}
 
 			var clone = ItemUtils.CloneItemSafely(item);
-			
+
 			var bestOffer =
 				Session.Traders
 					.Where(trader => trader.Info.Available && !trader.Info.Disabled && trader.Info.Unlocked && !trader.Settings.AvailableInRaid)
@@ -331,7 +331,7 @@ namespace LootValuePlus
 		public static bool ShouldSellToTraderDueToPriceOrCondition(Item item)
 		{
 			var flags = DurabilityOrProfitConditionFlags.GetDurabilityOrProfitConditionFlagsForItem(item);
-			return flags.shouldSellToTraderDueToBeingNonOperational || flags.shouldSellToTraderDueToDurabilityThreshold || flags.shouldSellToTraderDueToProfitThreshold;
+			return flags.ShouldSellItemToTraderDueToTriggeredConditions();
 		}
 
 		public static void SellToTrader(Item item)
@@ -407,33 +407,61 @@ namespace LootValuePlus
 	{
 
 		public bool shouldSellToTraderDueToBeingNonOperational;
-		public bool shouldSellToTraderDueToDurabilityThreshold;
-		public bool shouldSellToTraderDueToProfitThreshold;
+		public bool shouldSellNonOperationalToFleaDueToHighProfit;
+		public bool shouldSellToTraderBecauseDurabilityIsTooLow;
+		public bool shouldSellToTraderBecauseFleaProfitIsTooLow;
 
 
 		public DurabilityOrProfitConditionFlags(
 			bool shouldSellToTraderDueToBeingNonOperational,
-			bool shouldSellToTraderDueToDurabilityThreshold,
-			bool shouldSellToTraderDueToProfitThreshold
+			bool shouldSellNonOperationalToFleaDueToHighProfit,
+			bool shouldSellToTraderBecauseDurabilityIsTooLow,
+			bool shouldSellToTraderBecauseFleaProfitIsTooLow
 		)
 		{
 			this.shouldSellToTraderDueToBeingNonOperational = shouldSellToTraderDueToBeingNonOperational;
-			this.shouldSellToTraderDueToDurabilityThreshold = shouldSellToTraderDueToDurabilityThreshold;
-			this.shouldSellToTraderDueToProfitThreshold = shouldSellToTraderDueToProfitThreshold;
+			this.shouldSellNonOperationalToFleaDueToHighProfit = shouldSellNonOperationalToFleaDueToHighProfit;
+			this.shouldSellToTraderBecauseDurabilityIsTooLow = shouldSellToTraderBecauseDurabilityIsTooLow;
+			this.shouldSellToTraderBecauseFleaProfitIsTooLow = shouldSellToTraderBecauseFleaProfitIsTooLow;
 		}
 
 		public static DurabilityOrProfitConditionFlags GetDurabilityOrProfitConditionFlagsForItem(Item item)
 		{
 			bool sellNonOperationalWeaponsToTraderEnabled = LootValueMod.SellToTraderIfWeaponIsNonOperational.Value;
-			bool sellItemToTraderBelowCertainFleaProfitEnabled = LootValueMod.SellToTraderBelowProfitThresholdEnabled.Value;
-			int profitThreshold = LootValueMod.SellToTraderProfitThreshold.Value;
-			bool sellItemToTraderBelowCertainDurabilityEnabled = LootValueMod.SellToTraderBelowDurabilityThresholdEnabled.Value;
-			int durabilityThreshold = LootValueMod.SellToTraderDurabilityThreshold.Value;
-
+			int nonOperationalFleaValueThreshold = LootValueMod.SellToFleaIfWeaponIsNonOperationalAboveThreshold.Value;
 			bool shouldSellToTraderDueToBeingNonOperational = ItemUtils.IsWeaponNonOperational(item) && sellNonOperationalWeaponsToTraderEnabled;
-			bool shouldSellToTraderDueToDurabilityThreshold = ItemUtils.IsItemBelowDurability(item, durabilityThreshold) && sellItemToTraderBelowCertainDurabilityEnabled;
-			bool shouldSellToTraderDueToProfitThreshold = FleaUtils.IsItemFleaMarketPriceBelow(item, profitThreshold, FleaUtils.CanSellMultipleOfItem(item)) && sellItemToTraderBelowCertainFleaProfitEnabled;
-			return new DurabilityOrProfitConditionFlags(shouldSellToTraderDueToBeingNonOperational, shouldSellToTraderDueToDurabilityThreshold, shouldSellToTraderDueToProfitThreshold);
+			bool shouldSellNonOperationalToFleaDueToHighProfit = nonOperationalFleaValueThreshold > 0 && !FleaUtils.IsItemFleaMarketPriceBelow(item, nonOperationalFleaValueThreshold, false);
+
+			bool sellTooLowDurabilityItemsToTraderEnabled = LootValueMod.SellToTraderBelowDurabilityThresholdEnabled.Value;
+			int durabilityThreshold = LootValueMod.SellToTraderDurabilityThreshold.Value;
+			bool shouldSellToTraderBecauseDurabilityIsTooLow = ItemUtils.IsItemBelowDurability(item, durabilityThreshold) && sellTooLowDurabilityItemsToTraderEnabled;
+
+			bool sellTooCheapFleaItemsToTraderEnabled = LootValueMod.SellToTraderBelowProfitThresholdEnabled.Value;
+			int fleaMarketProfitThreshold = LootValueMod.SellToTraderProfitThreshold.Value;
+			bool shouldSellToTraderBecauseFleaProfitIsTooLow = FleaUtils.IsItemFleaMarketPriceBelow(item, fleaMarketProfitThreshold, FleaUtils.CanSellMultipleOfItem(item)) && sellTooCheapFleaItemsToTraderEnabled;
+
+
+			return new DurabilityOrProfitConditionFlags(shouldSellToTraderDueToBeingNonOperational, shouldSellNonOperationalToFleaDueToHighProfit, shouldSellToTraderBecauseDurabilityIsTooLow, shouldSellToTraderBecauseFleaProfitIsTooLow);
+		}
+
+		public bool ShouldSellDueToBeingWeaponAndNonOperational()
+		{
+			if (this.shouldSellToTraderDueToBeingNonOperational && !this.shouldSellNonOperationalToFleaDueToHighProfit)
+			{
+				return true;
+			}
+			return false;
+		}
+
+		public bool IsBelowDurabilityThresholdOrBelowFleaProfitThreshold()
+		{
+			return this.shouldSellToTraderBecauseDurabilityIsTooLow || this.shouldSellToTraderBecauseFleaProfitIsTooLow;
+		}
+
+		public bool ShouldSellItemToTraderDueToTriggeredConditions()
+		{
+
+			return this.IsBelowDurabilityThresholdOrBelowFleaProfitThreshold() || this.ShouldSellDueToBeingWeaponAndNonOperational();
 		}
 
 	}

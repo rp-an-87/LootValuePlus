@@ -45,6 +45,7 @@ namespace LootValuePlus
 		internal static ConfigEntry<bool> AllowQuickSellLocked;
 		internal static ConfigEntry<bool> OneButtonQuickSell;
 		internal static ConfigEntry<bool> SellToTraderIfWeaponIsNonOperational;
+		internal static ConfigEntry<int> SellToFleaIfWeaponIsNonOperationalAboveThreshold;
 		internal static ConfigEntry<bool> SellToTraderBelowProfitThresholdEnabled;
 		internal static ConfigEntry<int> SellToTraderProfitThreshold;
 
@@ -103,7 +104,8 @@ If enabled:
 			AllowQuickSellPinned = Config.Bind("1. Quick Sell", "3. Allow selling Pinned items", false, "Selling all similar items will also consider pinned items.");
 			AllowQuickSellLocked = Config.Bind("1. Quick Sell", "4. Allow selling Locked items", false, "Selling all similar items will also consider locked items.");
 			IgnoreFleaMaxOfferCount = Config.Bind("1. Quick Sell", "5. Ignore flea max offer count", false);
-			SellToTraderIfWeaponIsNonOperational = Config.Bind("1. Quick Sell", "6. Sell to trader if item is weapon and non operational", false);
+			SellToTraderIfWeaponIsNonOperational = Config.Bind("1. Quick Sell", "6. Sell unusable weapons to trader", false, "Will sell all non operational weapons to the trader.");
+			SellToFleaIfWeaponIsNonOperationalAboveThreshold = Config.Bind("1. Quick Sell", "6.1 Unless profit in flea above threshold", 0, "Unless this value is higher than 0, then it will do it based on the price.");
 			SellToTraderBelowProfitThresholdEnabled = Config.Bind("1. Quick Sell", "7. Sell to trader if flea price below threshold", false);
 			SellToTraderProfitThreshold = Config.Bind("1. Quick Sell", "7.1. -> Flea market profit threshold", 0,
 				"This means that if the flea market profit for this item is below this number, it will be sold to the traders instead. Useful to not clutter offers with minimal impact. If sell multiple at once is enabled, the total profit of the entire offer will be used instead.");

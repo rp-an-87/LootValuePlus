@@ -403,11 +403,11 @@ namespace LootValuePlus
 				{
 					return "due to being non operational";
 				}
-				else if (flags.shouldSellToTraderDueToDurabilityThreshold)
+				else if (flags.shouldSellToTraderBecauseDurabilityIsTooLow)
 				{
 					return "due to low durability";
 				}
-				else if (flags.shouldSellToTraderDueToProfitThreshold)
+				else if (flags.shouldSellToTraderBecauseFleaProfitIsTooLow)
 				{
 					return "due to low flea profit";
 				}
